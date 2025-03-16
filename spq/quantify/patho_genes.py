@@ -8,7 +8,7 @@ import glob
 import pandas as pd
 import spq.extra_functions as ef
 
-def quantify_reads(output_path,filename, virus_names):
+def quantify_reads(output_path,filename, virus_names, csvfilesoutput):
     
     print ("STATUS: quantifying pathgen copies ...")
     ## -- get reads mapping to pathogen
@@ -63,14 +63,16 @@ def quantify_reads(output_path,filename, virus_names):
                 df_umi = df2[["cell_barcode", "umi", "gene"]].groupby(["cell_barcode", "gene"]).count()
                 df_umi = df_umi.reset_index()
                 df_umi = df_umi.set_index('cell_barcode')
-                df_umi.to_csv(os.path.join(output_path, "pathogen_al_gene_counts_"+krename+".csv"))
+                if csvfilesoutput=="True":
+                    df_umi.to_csv(os.path.join(output_path, "pathogen_al_gene_counts_"+krename+".csv"))
                 dfumiall[k]=  df_umi
                 
         else: 
             print("STATUS: no reads mapping to pathogen genes.. will not add genes to 10x filtered files")
             df_umi = pd.DataFrame(columns=["cell_barcode", "gene", "umi"])
             df_umi = df_umi.set_index('cell_barcode')
-            df_umi.to_csv(os.path.join(output_path, "pathogen_al_gene_counts_"+krename+".csv"))
+            if csvfilesoutput=="True":
+                df_umi.to_csv(os.path.join(output_path, "pathogen_al_gene_counts_"+krename+".csv"))
             dfumiall[k]=False
     return(dfumiall)
 
@@ -87,6 +89,6 @@ def htseq_run(args, virus_names):
         arg=["htseq-count", "--format=bam", "--mode=intersection-nonempty", "--type=gene", "--idattr=gene_id", os.path.join(args.output_path, "pathogen_al_mapped_sort.bam"),
             files_gtf[0], "--samout="+os.path.join(args.output_path,"pathogen_genes_al_sort_counts.sam")]
         ef._run_subprocesses(arg, "STATUS: running htseq for pathogen genes ", "running htseq for pathogen genes")
-        dfumi = quantify_reads(args.output_path, os.path.join(args.output_path, "pathogen_genes_al_sort_counts.sam"), virus_names)
+        dfumi = quantify_reads(args.output_path, os.path.join(args.output_path, "pathogen_genes_al_sort_counts.sam"), virus_names, args.csvfilesoutput)
         return dfumi
 
